@@ -18,33 +18,49 @@
 </head>
 
 <body>
-  <canvas id="canvas" width="250" height="450"></canvas>
-  
+  <center>
+    <canvas id="canvas" width="250" height="450"></canvas>
+    <div id="duh"> </div <br>
+	<div id="key"> </div>
+  </center>
+  <script type="text/javascript" src ="kibo.js"></script>
   <script type="text/javascript"> 
+	
     var CELL_SIZE = 25;
-    var INTERVAL = 25; // milliseconds
+    var INTERVAL = 350; // milliseconds
+	var count = 0;  // For testing purposes -- make sure the interval stops on game over/completion -- *****clean me
     var canvas = document.getElementById('canvas');
+	canvas.style.border = "black 1px solid";
     var ctx = canvas.getContext('2d');
     var inactiveBlocks = [];
     var activeBlock = new Block(0);
-
+    
+	/* Exchanged this for the code below: looks a lot cleaner and MAY be more efficient.
     function clearGrid() {
       ctx.fillStyle = '#FFFFFF';
       ctx.fillRect(0, 0, 10 * CELL_SIZE, 18 * CELL_SIZE);
     }
-
+	*/
+    function clearGrid() {
+      ctx.clearRect(0, 0, 10 * CELL_SIZE, 18 * CELL_SIZE);
+    }
+	
     function Cell(x, y) {
       this.x = x;
       this.y = y;
-    }
-
-    Cell.prototype.draw = function() {
-      ctx.fillStyle = '#000000';
-      ctx.fillRect(this.x * CELL_SIZE, this.y * CELL_SIZE, 25, 25);
-    };
-
-    Cell.prototype.drop = function() {
-      ++this.y;
+	  this.draw = function() {
+	    ctx.fillStyle = '#000000';
+        ctx.fillRect(this.x * CELL_SIZE, this.y * CELL_SIZE, 25, 25);
+	  }
+      this.drop = function() {
+        ++this.y;
+	  }
+	  this.moveL = function() {
+	    --this.x;
+	  }
+	  this.moveR = function() {
+	    ++this.x;
+	  }
     }
 
     function Block(blockType) {
@@ -52,22 +68,64 @@
       this.cells = [];
       this.x = 5;
       this.y = 0;
-      if (this.type === 0) {
+      if (this.type === 0) { // Long skinny block
         this.cells.push(new Cell(this.x, this.y));
         this.cells.push(new Cell(this.x, this.y - 1));
         this.cells.push(new Cell(this.x, this.y - 2));
         this.cells.push(new Cell(this.x, this.y - 3));
-      } 
-    }
-
-    Block.prototype.draw = function() {
-      if (this.type === 0) {
-        for (var i = 0; i < 4; ++i) this.cells[i].draw();
-        
       }
-    };
+	  
+      this.draw = function() {
+        if (this.type === 0) {
+          for (var i = 0; i < 4; ++i) this.cells[i].draw();
+        }
+	  }
+      this.drop = function() {
+        ++this.y;
+        for (var i = 0; i < 4; ++i) this.cells[i].drop();
+      }
+	  this.canShiftLeft = function() {
+	    for(var i = 0; i < inactiveBlocks.length; i++) {  // for every inactive block 
+		  if(activeBlock.wouldCollideLeft(inactiveBlocks[i])) return false;  // if activeBlock will collide with inactive block, return false 
+	    }
+		return true; // else return true
+	  }
+	  this.canShiftRight = function() {
+	    for(var i = 0; i < inactiveBlocks.length; i++) {  // for every inactive block 
+		  if(activeBlock.wouldCollideRight(inactiveBlocks[i])) return false;  // if activeBlock will collide with inactive block, return false 
+	    }
+		return true; // else return true
+	  }
+	  this.moveLeft = function() {
+	    var hitWall = false;
+	    for (var i = 0; i < 4; ++i) {
+		  if(this.cells[i].x <= 0) hitWall = true;
+		}
+		if(!hitWall && activeBlock.canShiftLeft()) {
+		  for (var i = 0; i < 4; ++i) this.cells[i].moveL();
+		}
+		console.log("moveLeft");
+	  }
+	  this.moveRight = function() {
+	    var hitWall = false;
+	    for (var i = 0; i < 4; ++i) {
+		  if(this.cells[i].x >= 9) hitWall = true;
+		}
+		if(!hitWall && activeBlock.canShiftRight()) {
+		  for (var i = 0; i < 4; ++i) this.cells[i].moveR();
+		}
+		console.log("moveRight");
+	  }
+	  this.moveDown = function() {
+		if(activeBlock.canDrop()) activeBlock.drop();
+		console.log("moveDown");
+	  }
+	  this.rotate = function() {
+	    // GONNA BE TOUGH!
+	  }
+	}
 
-    Block.prototype.wouldCollide = function(otherBlock) {
+    Block.prototype.wouldCollideDown = function(otherBlock) {
       for (var i = 0; i < 4; ++i) {
         var cell = this.cells[i];
         for (var j = 0; j < 4; ++j) {
@@ -80,9 +138,30 @@
       return false;
     };
 
-    Block.prototype.drop = function() {
-      ++this.y;
-      for (var i = 0; i < 4; ++i) this.cells[i].drop();
+    Block.prototype.wouldCollideLeft = function(otherBlock) {
+      for (var i = 0; i < 4; ++i) {
+        var cell = this.cells[i];
+        for (var j = 0; j < 4; ++j) {
+          var otherCell = otherBlock.cells[j];
+          if (otherCell.y == cell.y && otherCell.x == cell.x - 1) {
+            return true;
+          }
+        }
+      }
+      return false;
+    };
+	
+    Block.prototype.wouldCollideRight = function(otherBlock) {
+      for (var i = 0; i < 4; ++i) {
+        var cell = this.cells[i];
+        for (var j = 0; j < 4; ++j) {
+          var otherCell = otherBlock.cells[j];
+          if (otherCell.y == cell.y && otherCell.x == cell.x + 1) {
+            return true;
+          }
+        }
+      }
+      return false;
     };
 
     Block.prototype.canDrop = function() {
@@ -90,29 +169,76 @@
         return false;
       }
       for (var i = 0; i < inactiveBlocks.length; ++i) {
-        if (activeBlock.wouldCollide(inactiveBlocks[i])) {
+        if (activeBlock.wouldCollideDown(inactiveBlocks[i])) {
           return false;
         }
       }
       return true;
     }
 
-    activeBlock.draw();
-    var interval = setInterval(function() {
-      clearGrid();
-      for (var i = 0; i < inactiveBlocks.length; ++i) inactiveBlocks[i].draw();
+	function updateGameLogic() {
+	  // UPDATE: If your falling block can fall further, go ahead. If not, move it to inactive blocks.
       if (activeBlock.canDrop()) {
         activeBlock.drop();
-      } else {
+      }
+	  else {
         inactiveBlocks.push(activeBlock);
         activeBlock = new Block(0);
         if (activeBlock.canDrop() === false) {
-          clearInterval(interval);
+          clearInterval(gameLoop);
         }
       }
+	}
+	
+	function render() {
+	  // RENDER: Draw all static/dropped blocks and active block. (RENDER)
+	  clearGrid();
+      for (var i = 0; i < inactiveBlocks.length; ++i) inactiveBlocks[i].draw();
       activeBlock.draw();
-    }, INTERVAL);
+	}
+	
+	function clearBlock(block) {
+	  for(var i = 0; i < 4; i++) ctx.clearRect(block.cells[i].x * CELL_SIZE, block.cells[i].y * CELL_SIZE, 25, 25);
+	}
+	
+	
 
+    // INPUT: Gather input and update positions/velocity/etc.  (This is through the use of github repository 'kibo')
+	// https://github.com/marquete/kibo.git
+	var k = new Kibo();
+	k.down(['left'], function () {
+	  clearBlock(activeBlock);
+	  activeBlock.moveLeft();
+	  activeBlock.draw();
+	});
+	k.down(['right'], function () {
+	  clearBlock(activeBlock);
+	  activeBlock.moveRight();
+	  activeBlock.draw();
+	});
+	k.down(['down'], function () {
+	  clearBlock(activeBlock);
+	  activeBlock.moveDown();
+	  activeBlock.draw();
+	});
+	k.down(['up'], function () {
+	  clearBlock(activeBlock);
+	  activeBlock.rotate();
+	  activeBlock.draw();
+	});
+	
+	
+	
+	// The Game Loop
+    activeBlock.draw();
+    var gameLoop = setInterval(function() {
+	
+	  updateGameLogic();
+	  render();
+	  
+	  count += 1; // ------------------------------------------------clean me
+	  document.getElementById('duh').innerHTML=count;
+    }, INTERVAL);
 
   </script>
 
