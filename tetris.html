@@ -19,28 +19,114 @@
 
 <body>
   <center>
-    <canvas id="canvas" width="250" height="450"></canvas>
-    <div id="duh"> </div <br>
-	<div id="key"> </div>
+    <table>
+	<tr>
+      <td>
+	    <canvas id="canvas" width="250" height="450"></canvas>
+	  </td>
+	  <td>
+	    <div>Ticks: </div><div id="count"> </div <br>
+	    <div>Completed Rows: </div><div id="completerows"> </div>
+	  </td>
+	</tr>
+	</table>
   </center>
   <script type="text/javascript" src ="kibo.js"></script>
   <script type="text/javascript"> 
 	
     var CELL_SIZE = 25;
-    var INTERVAL = 350; // milliseconds
+    var INTERVAL = 550; // milliseconds
 	var count = 0;  // For testing purposes -- make sure the interval stops on game over/completion -- *****clean me
-    var canvas = document.getElementById('canvas');
+	var gameRunning = true;
+	var allowInput = true;
+	var completedRows = 0;
+	var canvas = document.getElementById('canvas');
 	canvas.style.border = "black 1px solid";
     var ctx = canvas.getContext('2d');
     var inactiveBlocks = [];
-    var activeBlock = new Block(0);
+	var blockRotations = [];
+
+    // Block Rotations:
+	// All pairs are x,y grid coordinates relative to the center block given to it by the constructor (0, 5).
+	// The X would denote the center of rotation block in the simple diagrams. 
+	
+	// Long block
+	//    [ ]
+	//    [X]
+	//    [ ]
+	//    [ ]
+	blockRotations[0] = [
+	  [[0,-1],[0,0],[0,1],[0,2]],
+	  [[-1,0],[0,0],[1,0],[2,0]],
+	  [[0,-2],[0,-1],[0,0],[0,1]],
+	  [[-2,0],[-1,0],[0,0],[1,0]] 
+	];
+	
+	// Square block
+	//    [ ][ ]
+	//    [ ][ ]
+	blockRotations[1] = [
+	  [[0,-1],[0,0],[1,0],[1,-1]],
+	  [[0,-1],[0,0],[1,0],[1,-1]],
+	  [[0,-1],[0,0],[1,0],[1,-1]],
+	  [[0,-1],[0,0],[1,0],[1,-1]]
+	];
+	
+	// T block
+	//       [ ]
+	//    [ ][X][ ]
+	blockRotations[2] = [
+	  [[0,-1],[0,0],[-1,0],[1,0]],
+	  [[0,-1],[0,0],[0, 1],[1,0]],
+	  [[0,1],[0,0],[-1,0],[1,0]],
+	  [[0,-1],[0,0],[-1,0],[0,1]]
+	];
+	
+	// S block
+	//       [X][ ]
+	//    [ ][ ]
+	blockRotations[3] = [
+	  [[-1,1],[0,1],[0,0],[1,0]],
+	  [[0,-1],[0,0],[1,0],[1,1]],
+	  [[-1,1],[0,1],[0,0],[1,0]],
+	  [[0,-1],[0,0],[1,0],[1,1]]
+	];
+	
+	// Z block
+	//    [ ][X]
+	//       [ ][ ]
+	blockRotations[4] = [
+	  [[-1,0],[0,0],[0,1],[1,1]],
+	  [[0,0],[0,1],[1,0],[1,-1]],
+	  [[-1,0],[0,0],[0,1],[1,1]],
+	  [[0,0],[0,1],[1,0],[1,-1]]
+	];
+	
+	// L block
+	//       [ ]
+	//       [X]
+	//       [ ][ ]
+	blockRotations[5] = [
+	  [[0,-1],[0,0],[0,1],[1,1]],
+	  [[-1,1],[-1,0],[0,0],[1,0]],
+	  [[-1,-1],[0,-1],[0,0],[0,1]],
+	  [[-1,0],[0,0],[1,0],[1,-1]]
+	];
+	
+    // Reverse-L block
+	//       [ ]
+	//       [X]
+	//    [ ][ ]
+	blockRotations[6] = [
+	  [[-1,1],[0,1],[0,0],[0,-1]],
+	  [[-1,-1],[-1,0],[0,0],[1,0]],
+	  [[0,1],[0,0],[0,-1],[1,-1]],
+	  [[-1,0],[0,0],[1,0],[1,1]]
+	];
+	
+	
+	var activeBlock = new Block(Math.floor(Math.random()*7));
     
-	/* Exchanged this for the code below: looks a lot cleaner and MAY be more efficient.
-    function clearGrid() {
-      ctx.fillStyle = '#FFFFFF';
-      ctx.fillRect(0, 0, 10 * CELL_SIZE, 18 * CELL_SIZE);
-    }
-	*/
     function clearGrid() {
       ctx.clearRect(0, 0, 10 * CELL_SIZE, 18 * CELL_SIZE);
     }
@@ -66,69 +152,86 @@
     function Block(blockType) {
       this.type = blockType;
       this.cells = [];
-      this.x = 5;
-      this.y = 0;
-      if (this.type === 0) { // Long skinny block
-        this.cells.push(new Cell(this.x, this.y));
-        this.cells.push(new Cell(this.x, this.y - 1));
-        this.cells.push(new Cell(this.x, this.y - 2));
-        this.cells.push(new Cell(this.x, this.y - 3));
-      }
+	  this.rotation = 0;
+      this.x = 5; // Center cell x location
+      this.y = 0; // Center cell y location
+      for(var i = 0; i < 4; i++) this.cells.push(new Cell(blockRotations[this.type][this.rotation][i][0] + this.x, blockRotations[this.type][this.rotation][i][1] + this.y));
 	  
       this.draw = function() {
-        if (this.type === 0) {
-          for (var i = 0; i < 4; ++i) this.cells[i].draw();
-        }
+        for (var i = 0; i < this.cells.length; ++i) this.cells[i].draw();
 	  }
+	  
       this.drop = function() {
         ++this.y;
-        for (var i = 0; i < 4; ++i) this.cells[i].drop();
+        for (var i = 0; i < this.cells.length; ++i) this.cells[i].drop();
       }
+	  
 	  this.canShiftLeft = function() {
-	    for(var i = 0; i < inactiveBlocks.length; i++) {  // for every inactive block 
-		  if(activeBlock.wouldCollideLeft(inactiveBlocks[i])) return false;  // if activeBlock will collide with inactive block, return false 
+	    for(var i = 0; i < inactiveBlocks.length; i++) {
+		  if(activeBlock.wouldCollideLeft(inactiveBlocks[i])) return false;
 	    }
-		return true; // else return true
+		return true;
 	  }
 	  this.canShiftRight = function() {
-	    for(var i = 0; i < inactiveBlocks.length; i++) {  // for every inactive block 
-		  if(activeBlock.wouldCollideRight(inactiveBlocks[i])) return false;  // if activeBlock will collide with inactive block, return false 
+	    for(var i = 0; i < inactiveBlocks.length; i++) {
+		  if(activeBlock.wouldCollideRight(inactiveBlocks[i])) return false;
 	    }
-		return true; // else return true
+		return true;
 	  }
 	  this.moveLeft = function() {
-	    var hitWall = false;
-	    for (var i = 0; i < 4; ++i) {
-		  if(this.cells[i].x <= 0) hitWall = true;
+	    for (var i = 0; i < this.cells.length; ++i) {
+		  if(this.cells[i].x <= 0) return false;
 		}
-		if(!hitWall && activeBlock.canShiftLeft()) {
-		  for (var i = 0; i < 4; ++i) this.cells[i].moveL();
+		if(activeBlock.canShiftLeft()) {
+		  for (var i = 0; i < this.cells.length; ++i) this.cells[i].moveL();
+		  this.x--;
 		}
 		console.log("moveLeft");
 	  }
 	  this.moveRight = function() {
-	    var hitWall = false;
-	    for (var i = 0; i < 4; ++i) {
-		  if(this.cells[i].x >= 9) hitWall = true;
+	    for (var i = 0; i < this.cells.length; ++i) {
+		  if(this.cells[i].x >= 9) return false;
 		}
-		if(!hitWall && activeBlock.canShiftRight()) {
-		  for (var i = 0; i < 4; ++i) this.cells[i].moveR();
+		if(activeBlock.canShiftRight()) {
+		  for (var i = 0; i < this.cells.length; ++i) this.cells[i].moveR();
+		  this.x++;
 		}
 		console.log("moveRight");
 	  }
 	  this.moveDown = function() {
-		if(activeBlock.canDrop()) activeBlock.drop();
+		if(activeBlock.canDrop()) {
+		  activeBlock.drop();
+		}
 		console.log("moveDown");
 	  }
-	  this.rotate = function() {
-	    // GONNA BE TOUGH!
+	  
+	  this.rotate = function() {  
+		var newCells = [];
+		var oldCells = activeBlock.cells;
+		this.rotation++;
+		if(this.rotation === 4) this.rotation = 0;
+		for(var i = 0; i < 4; i++) {
+		  newCells.push(new Cell(blockRotations[this.type][this.rotation][i][0] + this.x, blockRotations[this.type][this.rotation][i][1] + this.y));
+		}
+		for(var i = 0; i < 4; i++) {
+		  if(newCells[i].x > 9) {
+			while(newCells[i].x > 9) for(var j = 0; j < 4; j++) newCells[j].moveL();
+		  }
+		  if(newCells[i].x < 0) {
+		    while(newCells[i].x < 0) for(var k = 0; k < 4; k++) newCells[k].moveR();
+		  }
+		  if(newCells[i].y > 17) {
+		    while(newCells[i].y > 17) for(var k = 0; k < 4; k++) newCells[k].y--;
+		  }
+		}
+		activeBlock.cells = newCells;
 	  }
 	}
 
     Block.prototype.wouldCollideDown = function(otherBlock) {
       for (var i = 0; i < 4; ++i) {
         var cell = this.cells[i];
-        for (var j = 0; j < 4; ++j) {
+        for (var j = 0; j < otherBlock.cells.length; ++j) {
           var otherCell = otherBlock.cells[j];
           if (otherCell.x == cell.x && otherCell.y == cell.y + 1) {
             return true;
@@ -141,7 +244,7 @@
     Block.prototype.wouldCollideLeft = function(otherBlock) {
       for (var i = 0; i < 4; ++i) {
         var cell = this.cells[i];
-        for (var j = 0; j < 4; ++j) {
+        for (var j = 0; j < otherBlock.cells.length; ++j) {
           var otherCell = otherBlock.cells[j];
           if (otherCell.y == cell.y && otherCell.x == cell.x - 1) {
             return true;
@@ -154,7 +257,7 @@
     Block.prototype.wouldCollideRight = function(otherBlock) {
       for (var i = 0; i < 4; ++i) {
         var cell = this.cells[i];
-        for (var j = 0; j < 4; ++j) {
+        for (var j = 0; j < otherBlock.cells.length; ++j) {
           var otherCell = otherBlock.cells[j];
           if (otherCell.y == cell.y && otherCell.x == cell.x + 1) {
             return true;
@@ -165,10 +268,10 @@
     };
 
     Block.prototype.canDrop = function() {
-      if (this.y >= 17) {
-        return false;
-      }
-      for (var i = 0; i < inactiveBlocks.length; ++i) {
+      for(var i = 0; i < 4; i++) { // Checks for collision with grid floor
+	    if(this.cells[i].y >= 17) return false;
+	  }
+      for (var i = 0; i < inactiveBlocks.length; i++) {
         if (activeBlock.wouldCollideDown(inactiveBlocks[i])) {
           return false;
         }
@@ -176,70 +279,130 @@
       return true;
     }
 
+	Block.prototype.fullDrop = function() {
+	  while(this.canDrop()) this.drop();
+	  inactiveBlocks.push(activeBlock);
+      activeBlock = new Block(Math.floor(Math.random()*7));
+	}
 	function updateGameLogic() {
-	  // UPDATE: If your falling block can fall further, go ahead. If not, move it to inactive blocks.
-      if (activeBlock.canDrop()) {
+	  // UPDATE
+      if(activeBlock.canDrop()) {
         activeBlock.drop();
       }
 	  else {
         inactiveBlocks.push(activeBlock);
-        activeBlock = new Block(0);
+        activeBlock = new Block(Math.floor(Math.random()*7));
         if (activeBlock.canDrop() === false) {
           clearInterval(gameLoop);
+		  gameRunning = false;
         }
-      }
+      }  
 	}
 	
+	// RENDER: Draw static/dropped blocks and active block. (RENDER)
 	function render() {
-	  // RENDER: Draw all static/dropped blocks and active block. (RENDER)
 	  clearGrid();
       for (var i = 0; i < inactiveBlocks.length; ++i) inactiveBlocks[i].draw();
       activeBlock.draw();
 	}
 	
 	function clearBlock(block) {
-	  for(var i = 0; i < 4; i++) ctx.clearRect(block.cells[i].x * CELL_SIZE, block.cells[i].y * CELL_SIZE, 25, 25);
+	  for(var i = 0; i < block.cells.length; i++) ctx.clearRect(block.cells[i].x * CELL_SIZE, block.cells[i].y * CELL_SIZE, 25, 25);
 	}
 	
-	
+	function updateCompleteRows() {
+	  var rowCells = 0;
+	  for(var k = 17; k >= 0; k--) {
+	    for(var i = 0; i < inactiveBlocks.length; i++) {
+	      for(var j = 0; j < inactiveBlocks[i].cells.length; j++) {
+		    if(inactiveBlocks[i].cells[j].y === k) rowCells++;
+	      }
+	    }
+		if(rowCells === 10) { 
+		  // Delete row
+		  for(var z = 0; z < inactiveBlocks.length; z++) {
+			for(var p = inactiveBlocks[z].cells.length - 1; p >= 0; p--) {
+			  if(inactiveBlocks[z].cells[p].y === k) inactiveBlocks[z].cells.splice(p,1);
+			}
+		  }
+		  // Then shift all above rows down
+		  for(var q = 0; q < inactiveBlocks.length; q++) {
+			for(var l = inactiveBlocks[q].cells.length - 1; l >= 0; l--) {
+			  if(inactiveBlocks[q].cells[l].y < k) {
+				inactiveBlocks[q].cells[l].y++;
+			  }
+			}
+		  }
+		  completedRows++;
+		  k++;
+		}
+		rowCells = 0;
+	  }
+	  // Look for empty blocks and purge them from the array.
+	  for(var m = inactiveBlocks.length - 1; m > 0; m--) {
+	    if(inactiveBlocks[m].cells.length === 0) inactiveBlocks.splice(m,1);
+	  }
+	}
 
-    // INPUT: Gather input and update positions/velocity/etc.  (This is through the use of github repository 'kibo')
+    // INPUT: Gather input and update rotations/velocity/etc.  (This is through the use of github repository 'kibo')
 	// https://github.com/marquete/kibo.git
 	var k = new Kibo();
+
 	k.down(['left'], function () {
-	  clearBlock(activeBlock);
-	  activeBlock.moveLeft();
-	  activeBlock.draw();
+	  if(gameRunning && allowInput){
+	    clearBlock(activeBlock);
+	    activeBlock.moveLeft();
+	    activeBlock.draw();
+	  }
 	});
 	k.down(['right'], function () {
-	  clearBlock(activeBlock);
-	  activeBlock.moveRight();
-	  activeBlock.draw();
+	  if(gameRunning && allowInput){
+	    clearBlock(activeBlock);
+	    activeBlock.moveRight();
+	    activeBlock.draw();
+	  }
 	});
 	k.down(['down'], function () {
-	  clearBlock(activeBlock);
-	  activeBlock.moveDown();
-	  activeBlock.draw();
+	  if(gameRunning && allowInput){
+	    clearBlock(activeBlock);
+	    activeBlock.moveDown();
+	    activeBlock.draw();
+	  }
 	});
 	k.down(['up'], function () {
-	  clearBlock(activeBlock);
-	  activeBlock.rotate();
-	  activeBlock.draw();
+	  if(gameRunning && allowInput){
+	    clearBlock(activeBlock);
+	    activeBlock.rotate();
+	    activeBlock.draw();
+	 }
 	});
-	
-	
+	k.down(['p'], function () {
+	  if(gameRunning && allowInput){
+	    clearInterval(gameLoop);
+	 }
+	});
+	k.down(['space'], function () {
+	  if(gameRunning && allowInput){
+	    clearBlock(activeBlock);
+	    activeBlock.fullDrop();
+		activeBlock.draw();
+		allowInput = false;
+	 }
+	});
 	
 	// The Game Loop
     activeBlock.draw();
     var gameLoop = setInterval(function() {
-	
+	  allowInput = true;
 	  updateGameLogic();
+	  updateCompleteRows();
 	  render();
-	  
-	  count += 1; // ------------------------------------------------clean me
-	  document.getElementById('duh').innerHTML=count;
+	  count += 1;
+	  document.getElementById('count').innerHTML=count;
+	  document.getElementById('completerows').innerHTML=completedRows; 
     }, INTERVAL);
-
+	
+	
   </script>
 
 </body>
