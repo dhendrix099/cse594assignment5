@@ -25,7 +25,9 @@
 	    <canvas id="canvas" width="250" height="450"></canvas>
 	  </td>
 	  <td>
-	    <div>Ticks: </div><div id="count"> </div <br>
+	    <div>Next Block</div>
+		<canvas id="nextblock" width="75" height="100"></canvas>
+	    <div>Ticks: </div><div id="count"> </div> <br>
 	    <div>Completed Rows: </div><div id="completerows"> </div>
 	  </td>
 	</tr>
@@ -42,12 +44,17 @@
 	var completedRows = 0;
 	var canvas = document.getElementById('canvas');
 	canvas.style.border = "black 1px solid";
-    var ctx = canvas.getContext('2d');
+	var nextBlock = document.getElementById('nextblock');
+    nextBlock.style.border = "black 1px solid";
+	var ctx = canvas.getContext('2d');
+	var nex = nextBlock.getContext('2d');
+	var tile = new Image();
+	tile.src = 'squaretile.gif';
     var inactiveBlocks = [];
 	var blockRotations = [];
 
     // Block Rotations:
-	// All pairs are x,y grid coordinates relative to the center block given to it by the constructor (0, 5).
+	// All pairs are x,y grid coordinates relative to the center block given to it by the constructor (-1, 5).
 	// The X would denote the center of rotation block in the simple diagrams. 
 	
 	// Long block
@@ -64,7 +71,7 @@
 	
 	// Square block
 	//    [ ][ ]
-	//    [ ][ ]
+	//    [X][ ]
 	blockRotations[1] = [
 	  [[0,-1],[0,0],[1,0],[1,-1]],
 	  [[0,-1],[0,0],[1,0],[1,-1]],
@@ -131,12 +138,14 @@
       ctx.clearRect(0, 0, 10 * CELL_SIZE, 18 * CELL_SIZE);
     }
 	
+	
     function Cell(x, y) {
       this.x = x;
       this.y = y;
 	  this.draw = function() {
-	    ctx.fillStyle = '#000000';
-        ctx.fillRect(this.x * CELL_SIZE, this.y * CELL_SIZE, 25, 25);
+	    //ctx.fillStyle = '#000000';
+        //ctx.fillRect(this.x * CELL_SIZE, this.y * CELL_SIZE, 25, 25);
+		ctx.drawImage(tile, this.x * CELL_SIZE, this.y * CELL_SIZE);
 	  }
       this.drop = function() {
         ++this.y;
@@ -154,7 +163,7 @@
       this.cells = [];
 	  this.rotation = 0;
       this.x = 5; // Center cell x location
-      this.y = 0; // Center cell y location
+      this.y = -1; // Center cell y location
       for(var i = 0; i < 4; i++) this.cells.push(new Cell(blockRotations[this.type][this.rotation][i][0] + this.x, blockRotations[this.type][this.rotation][i][1] + this.y));
 	  
       this.draw = function() {
@@ -280,8 +289,10 @@
     }
 
 	Block.prototype.fullDrop = function() {
+	  clearBlock(activeBlock);
 	  while(this.canDrop()) this.drop();
 	  inactiveBlocks.push(activeBlock);
+	  inactiveBlocks[inactiveBlocks.length - 1].draw();
       activeBlock = new Block(Math.floor(Math.random()*7));
 	}
 	function updateGameLogic() {
@@ -293,7 +304,6 @@
         inactiveBlocks.push(activeBlock);
         activeBlock = new Block(Math.floor(Math.random()*7));
         if (activeBlock.canDrop() === false) {
-          clearInterval(gameLoop);
 		  gameRunning = false;
         }
       }  
@@ -378,30 +388,34 @@
 	});
 	k.down(['p'], function () {
 	  if(gameRunning && allowInput){
-	    clearInterval(gameLoop);
+	    gameRunning = false;
 	 }
 	});
 	k.down(['space'], function () {
 	  if(gameRunning && allowInput){
-	    clearBlock(activeBlock);
 	    activeBlock.fullDrop();
-		activeBlock.draw();
 		allowInput = false;
 	 }
 	});
 	
 	// The Game Loop
-    activeBlock.draw();
-    var gameLoop = setInterval(function() {
+    activeBlock.draw();	
+	function tetrisLoop() {
 	  allowInput = true;
 	  updateGameLogic();
 	  updateCompleteRows();
 	  render();
 	  count += 1;
 	  document.getElementById('count').innerHTML=count;
-	  document.getElementById('completerows').innerHTML=completedRows; 
-    }, INTERVAL);
-	
+	  document.getElementById('completerows').innerHTML=completedRows; 	
+	  
+	  nex.drawImage(tile, 25, 50);  // testing code
+	  nex.drawImage(tile, 50, 50);
+	  nex.drawImage(tile, 50, 75);
+	  
+	  if(gameRunning) setTimeout("tetrisLoop()", INTERVAL);
+	}
+	tetrisLoop();
 	
   </script>
 
