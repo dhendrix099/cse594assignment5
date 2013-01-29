@@ -21,21 +21,50 @@
   <center>
     <table>
 	<tr>
+	Assignment 5 <br>
+	</tr>
+	<tr valign=TOP>
+	  <td>
+	    <center><div>Swap</div></center>
+	    <canvas id="swapblock" width="75" height="100"></canvas>
+	  </td>
       <td>
 	    <canvas id="canvas" width="250" height="450"></canvas>
 	  </td>
 	  <td>
-	    <div>Next Block</div>
+	    <center><div>Next Block</div></center>
 		<canvas id="nextblock" width="75" height="100"></canvas>
 	    <div>Ticks: </div><div id="count"> </div> <br>
-	    <div>Completed Rows: </div><div id="completerows"> </div>
+	    <div>Score: </div><div id="completerows"> </div>
+	  </td>
+	</tr>
+	<tr valign=TOP>
+	  <td>
+	  </td>
+	  <td>
+	   <center> <b>Controls</b> <br>
+	  LEFT ARROW KEY(left) <br>
+	  RIGHT ARROW KEY(right) <br>
+	  DOWN ARROW KEY(drop faster) <br>
+	  UP ARROW KEY(rotate) <br>
+	  SPACEBAR(instant drop) <br>
+	  ENTER(swap blocks) <br>
+	  P(quit) <br> </center>
+	  </td>
+	  <td>
 	  </td>
 	</tr>
 	</table>
   </center>
   <script type="text/javascript" src ="kibo.js"></script>
   <script type="text/javascript"> 
-	
+
+
+
+	// Update all functions to include the context, for the "HOLD" canvas and "NEXTBLOCK" canvas to be able to use them.
+
+
+  
     var CELL_SIZE = 25;
     var INTERVAL = 550; // milliseconds
 	var count = 0;  // For testing purposes -- make sure the interval stops on game over/completion -- *****clean me
@@ -44,10 +73,13 @@
 	var completedRows = 0;
 	var canvas = document.getElementById('canvas');
 	canvas.style.border = "black 1px solid";
-	var nextBlock = document.getElementById('nextblock');
-    nextBlock.style.border = "black 1px solid";
+	var nextBlockCanvas = document.getElementById('nextblock');
+    nextBlockCanvas.style.border = "black 1px solid";
+	var swapBlockCanvas = document.getElementById('swapblock');
+    swapBlockCanvas.style.border = "black 1px solid";
 	var ctx = canvas.getContext('2d');
-	var nex = nextBlock.getContext('2d');
+	var nex = nextBlockCanvas.getContext('2d');  // 3 CELL_SIZE x 4 CELL_SIZE
+	var swa = swapBlockCanvas.getContext('2d');  // 3 CELL_SIZE x 4 CELL_SIZE
 	var tile = new Image();
 	tile.src = 'squaretile.gif';
     var inactiveBlocks = [];
@@ -132,14 +164,16 @@
 	];
 	
 	
-	var activeBlock = new Block(Math.floor(Math.random()*7));
+	var activeBlock = new Block(ctx, Math.floor(Math.random()*7), 5, -1);
+	var nextBlock = new Block(nex, Math.floor(Math.random()*7), 1, 1);
+	var swapBlock = new Block(swa, 0, 1, 1);
+	swapBlock.type = -1;
     
-    function clearGrid() {
+    function clearGrid(ctx) {
       ctx.clearRect(0, 0, 10 * CELL_SIZE, 18 * CELL_SIZE);
     }
 	
-	
-    function Cell(x, y) {
+    function Cell(ctx, x, y) {
       this.x = x;
       this.y = y;
 	  this.draw = function() {
@@ -158,13 +192,13 @@
 	  }
     }
 
-    function Block(blockType) {
+    function Block(ctx, blockType, x, y) {
       this.type = blockType;
       this.cells = [];
 	  this.rotation = 0;
-      this.x = 5; // Center cell x location
-      this.y = -1; // Center cell y location
-      for(var i = 0; i < 4; i++) this.cells.push(new Cell(blockRotations[this.type][this.rotation][i][0] + this.x, blockRotations[this.type][this.rotation][i][1] + this.y));
+      this.x = x; // Center cell x location
+      this.y = y; // Center cell y location
+      for(var i = 0; i < 4; i++) this.cells.push(new Cell(ctx, blockRotations[this.type][this.rotation][i][0] + this.x, blockRotations[this.type][this.rotation][i][1] + this.y));
 	  
       this.draw = function() {
         for (var i = 0; i < this.cells.length; ++i) this.cells[i].draw();
@@ -220,7 +254,7 @@
 		this.rotation++;
 		if(this.rotation === 4) this.rotation = 0;
 		for(var i = 0; i < 4; i++) {
-		  newCells.push(new Cell(blockRotations[this.type][this.rotation][i][0] + this.x, blockRotations[this.type][this.rotation][i][1] + this.y));
+		  newCells.push(new Cell(ctx, blockRotations[this.type][this.rotation][i][0] + this.x, blockRotations[this.type][this.rotation][i][1] + this.y));
 		}
 		for(var i = 0; i < 4; i++) {
 		  if(newCells[i].x > 9) {
@@ -234,6 +268,13 @@
 		  }
 		}
 		activeBlock.cells = newCells;
+		for(var j = 0; j < inactiveBlocks.length; j++) {
+		  if(activeBlock.overLap(inactiveBlocks[j])) {
+		    activeBlock.cells = oldCells;
+			if(this.rotation > 0) this.rotation--;
+			else this.rotation = 4;
+		  }
+		}
 	  }
 	}
 
@@ -250,6 +291,19 @@
       return false;
     };
 
+	Block.prototype.overLap = function(otherBlock) {
+      for (var i = 0; i < 4; ++i) {
+        var cell = this.cells[i];
+        for (var j = 0; j < otherBlock.cells.length; ++j) {
+          var otherCell = otherBlock.cells[j];
+          if (otherCell.y == cell.y && otherCell.x == cell.x) {
+            return true;
+          }
+        }
+      }
+      return false;
+    };
+	
     Block.prototype.wouldCollideLeft = function(otherBlock) {
       for (var i = 0; i < 4; ++i) {
         var cell = this.cells[i];
@@ -289,11 +343,12 @@
     }
 
 	Block.prototype.fullDrop = function() {
-	  clearBlock(activeBlock);
+	  clearBlock(ctx, activeBlock, 5, -1);
 	  while(this.canDrop()) this.drop();
 	  inactiveBlocks.push(activeBlock);
 	  inactiveBlocks[inactiveBlocks.length - 1].draw();
-      activeBlock = new Block(Math.floor(Math.random()*7));
+      activeBlock = new Block(ctx, nextBlock.type, 5, -1);
+	  nextBlock = new Block(nex, Math.floor(Math.random()*7), 1, 1);
 	}
 	function updateGameLogic() {
 	  // UPDATE
@@ -302,7 +357,8 @@
       }
 	  else {
         inactiveBlocks.push(activeBlock);
-        activeBlock = new Block(Math.floor(Math.random()*7));
+        activeBlock = new Block(ctx, nextBlock.type, 5, -1);
+		nextBlock = new Block(nex, Math.floor(Math.random()*7), 1, 1);
         if (activeBlock.canDrop() === false) {
 		  gameRunning = false;
         }
@@ -311,13 +367,34 @@
 	
 	// RENDER: Draw static/dropped blocks and active block. (RENDER)
 	function render() {
-	  clearGrid();
+	  clearGrid(ctx);
       for (var i = 0; i < inactiveBlocks.length; ++i) inactiveBlocks[i].draw();
       activeBlock.draw();
+	  nex.clearRect(0, 0, 75, 100);
+	  nextBlock.draw();
 	}
 	
-	function clearBlock(block) {
+	function clearBlock(ctx, block) {
 	  for(var i = 0; i < block.cells.length; i++) ctx.clearRect(block.cells[i].x * CELL_SIZE, block.cells[i].y * CELL_SIZE, 25, 25);
+	}
+	
+	function swapBlocks() {
+	  clearBlock(ctx, activeBlock);
+	  if(swapBlock.type === -1) {
+	    swapBlock = new Block(swa, activeBlock.type, 1, 1);
+		activeBlock = new Block(ctx, nextBlock.type, activeBlock.x, activeBlock.y);
+	    nextBlock = new Block(nex, Math.floor(Math.random()*7), 1, 1);
+		nex.clearRect(0, 0, 75, 100);
+	    nextBlock.draw();
+	  }
+	  else {
+	    var tempBlock = activeBlock;
+		activeBlock = new Block(ctx, swapBlock.type, activeBlock.x, activeBlock.y);
+		swapBlock = new Block(swa, tempBlock.type, 1, 1);
+	  }
+	  activeBlock.draw();
+	  swa.clearRect(0, 0, 75, 100);
+	  swapBlock.draw();
 	}
 	
 	function updateCompleteRows() {
@@ -360,28 +437,28 @@
 
 	k.down(['left'], function () {
 	  if(gameRunning && allowInput){
-	    clearBlock(activeBlock);
+	    clearBlock(ctx, activeBlock);
 	    activeBlock.moveLeft();
 	    activeBlock.draw();
 	  }
 	});
 	k.down(['right'], function () {
 	  if(gameRunning && allowInput){
-	    clearBlock(activeBlock);
+	    clearBlock(ctx, activeBlock);
 	    activeBlock.moveRight();
 	    activeBlock.draw();
 	  }
 	});
 	k.down(['down'], function () {
 	  if(gameRunning && allowInput){
-	    clearBlock(activeBlock);
+	    clearBlock(ctx, activeBlock);
 	    activeBlock.moveDown();
 	    activeBlock.draw();
 	  }
 	});
 	k.down(['up'], function () {
 	  if(gameRunning && allowInput){
-	    clearBlock(activeBlock);
+	    clearBlock(ctx, activeBlock);
 	    activeBlock.rotate();
 	    activeBlock.draw();
 	 }
@@ -397,22 +474,28 @@
 		allowInput = false;
 	 }
 	});
+	k.down(['enter'], function () {
+	  if(gameRunning && allowInput){
+	    swapBlocks();
+	 }
+	});
 	
 	// The Game Loop
     activeBlock.draw();	
+	nextBlock.draw()
 	function tetrisLoop() {
 	  allowInput = true;
 	  updateGameLogic();
 	  updateCompleteRows();
+	  
 	  render();
 	  count += 1;
 	  document.getElementById('count').innerHTML=count;
 	  document.getElementById('completerows').innerHTML=completedRows; 	
-	  
-	  nex.drawImage(tile, 25, 50);  // testing code
-	  nex.drawImage(tile, 50, 50);
-	  nex.drawImage(tile, 50, 75);
-	  
+	  if(completedRows >= 10) {
+	    gameRunning = false;
+		document.getElementById('completerows').innerHTML='YOU WIN!';
+	  }
 	  if(gameRunning) setTimeout("tetrisLoop()", INTERVAL);
 	}
 	tetrisLoop();
