@@ -56,15 +56,11 @@
 	</tr>
 	</table>
   </center>
+</body>
   <script type="text/javascript" src ="kibo.js"></script>
+  <script type="text/javascript" src ="Input.js"></script>
+  <script type="text/javascript" src ="Block.js"></script>
   <script type="text/javascript"> 
-
-
-
-	// Update all functions to include the context, for the "HOLD" canvas and "NEXTBLOCK" canvas to be able to use them.
-
-
-  
     var CELL_SIZE = 25;
     var INTERVAL = 550; // milliseconds
 	var count = 0;  // For testing purposes -- make sure the interval stops on game over/completion -- *****clean me
@@ -72,98 +68,20 @@
 	var allowInput = true;
 	var completedRows = 0;
 	var canvas = document.getElementById('canvas');
-	canvas.style.border = "black 1px solid";
 	var nextBlockCanvas = document.getElementById('nextblock');
-    nextBlockCanvas.style.border = "black 1px solid";
 	var swapBlockCanvas = document.getElementById('swapblock');
-    swapBlockCanvas.style.border = "black 1px solid";
+	canvas.style.border = "black 1px solid";
+    nextBlockCanvas.style.border = "black 1px solid";
+	swapBlockCanvas.style.border = "black 1px solid";
 	var ctx = canvas.getContext('2d');
 	var nex = nextBlockCanvas.getContext('2d');  // 3 CELL_SIZE x 4 CELL_SIZE
 	var swa = swapBlockCanvas.getContext('2d');  // 3 CELL_SIZE x 4 CELL_SIZE
-	var tile = new Image();
-	tile.src = 'squaretile.gif';
+	var imgArray = [];
+	for(var i = 0; i < 7; i++) {
+	  imgArray[i] = new Image();
+	  imgArray[i].src = 'img/' + i + '.png';
+	}
     var inactiveBlocks = [];
-	var blockRotations = [];
-
-    // Block Rotations:
-	// All pairs are x,y grid coordinates relative to the center block given to it by the constructor (-1, 5).
-	// The X would denote the center of rotation block in the simple diagrams. 
-	
-	// Long block
-	//    [ ]
-	//    [X]
-	//    [ ]
-	//    [ ]
-	blockRotations[0] = [
-	  [[0,-1],[0,0],[0,1],[0,2]],
-	  [[-1,0],[0,0],[1,0],[2,0]],
-	  [[0,-2],[0,-1],[0,0],[0,1]],
-	  [[-2,0],[-1,0],[0,0],[1,0]] 
-	];
-	
-	// Square block
-	//    [ ][ ]
-	//    [X][ ]
-	blockRotations[1] = [
-	  [[0,-1],[0,0],[1,0],[1,-1]],
-	  [[0,-1],[0,0],[1,0],[1,-1]],
-	  [[0,-1],[0,0],[1,0],[1,-1]],
-	  [[0,-1],[0,0],[1,0],[1,-1]]
-	];
-	
-	// T block
-	//       [ ]
-	//    [ ][X][ ]
-	blockRotations[2] = [
-	  [[0,-1],[0,0],[-1,0],[1,0]],
-	  [[0,-1],[0,0],[0, 1],[1,0]],
-	  [[0,1],[0,0],[-1,0],[1,0]],
-	  [[0,-1],[0,0],[-1,0],[0,1]]
-	];
-	
-	// S block
-	//       [X][ ]
-	//    [ ][ ]
-	blockRotations[3] = [
-	  [[-1,1],[0,1],[0,0],[1,0]],
-	  [[0,-1],[0,0],[1,0],[1,1]],
-	  [[-1,1],[0,1],[0,0],[1,0]],
-	  [[0,-1],[0,0],[1,0],[1,1]]
-	];
-	
-	// Z block
-	//    [ ][X]
-	//       [ ][ ]
-	blockRotations[4] = [
-	  [[-1,0],[0,0],[0,1],[1,1]],
-	  [[0,0],[0,1],[1,0],[1,-1]],
-	  [[-1,0],[0,0],[0,1],[1,1]],
-	  [[0,0],[0,1],[1,0],[1,-1]]
-	];
-	
-	// L block
-	//       [ ]
-	//       [X]
-	//       [ ][ ]
-	blockRotations[5] = [
-	  [[0,-1],[0,0],[0,1],[1,1]],
-	  [[-1,1],[-1,0],[0,0],[1,0]],
-	  [[-1,-1],[0,-1],[0,0],[0,1]],
-	  [[-1,0],[0,0],[1,0],[1,-1]]
-	];
-	
-    // Reverse-L block
-	//       [ ]
-	//       [X]
-	//    [ ][ ]
-	blockRotations[6] = [
-	  [[-1,1],[0,1],[0,0],[0,-1]],
-	  [[-1,-1],[-1,0],[0,0],[1,0]],
-	  [[0,1],[0,0],[0,-1],[1,-1]],
-	  [[-1,0],[0,0],[1,0],[1,1]]
-	];
-	
-	
 	var activeBlock = new Block(ctx, Math.floor(Math.random()*7), 5, -1);
 	var nextBlock = new Block(nex, Math.floor(Math.random()*7), 1, 1);
 	var swapBlock = new Block(swa, 0, 1, 1);
@@ -173,210 +91,36 @@
       ctx.clearRect(0, 0, 10 * CELL_SIZE, 18 * CELL_SIZE);
     }
 	
-    function Cell(ctx, x, y) {
+    function Cell(ctx, type, x, y) {
       this.x = x;
       this.y = y;
-	  this.draw = function() {
-	    //ctx.fillStyle = '#000000';
-        //ctx.fillRect(this.x * CELL_SIZE, this.y * CELL_SIZE, 25, 25);
-		ctx.drawImage(tile, this.x * CELL_SIZE, this.y * CELL_SIZE);
-	  }
-      this.drop = function() {
-        ++this.y;
-	  }
-	  this.moveL = function() {
-	    --this.x;
-	  }
-	  this.moveR = function() {
-	    ++this.x;
-	  }
+	  this.draw = function() { ctx.drawImage(imgArray[type], this.x * CELL_SIZE, this.y * CELL_SIZE); }
+      this.drop = function() { ++this.y; }
+	  this.moveL = function() { --this.x; }
+	  this.moveR = function() { ++this.x; }
     }
-
-    function Block(ctx, blockType, x, y) {
-      this.type = blockType;
-      this.cells = [];
-	  this.rotation = 0;
-      this.x = x; // Center cell x location
-      this.y = y; // Center cell y location
-      for(var i = 0; i < 4; i++) this.cells.push(new Cell(ctx, blockRotations[this.type][this.rotation][i][0] + this.x, blockRotations[this.type][this.rotation][i][1] + this.y));
-	  
-      this.draw = function() {
-        for (var i = 0; i < this.cells.length; ++i) this.cells[i].draw();
-	  }
-	  
-      this.drop = function() {
-        ++this.y;
-        for (var i = 0; i < this.cells.length; ++i) this.cells[i].drop();
-      }
-	  
-	  this.canShiftLeft = function() {
-	    for(var i = 0; i < inactiveBlocks.length; i++) {
-		  if(activeBlock.wouldCollideLeft(inactiveBlocks[i])) return false;
-	    }
-		return true;
-	  }
-	  this.canShiftRight = function() {
-	    for(var i = 0; i < inactiveBlocks.length; i++) {
-		  if(activeBlock.wouldCollideRight(inactiveBlocks[i])) return false;
-	    }
-		return true;
-	  }
-	  this.moveLeft = function() {
-	    for (var i = 0; i < this.cells.length; ++i) {
-		  if(this.cells[i].x <= 0) return false;
-		}
-		if(activeBlock.canShiftLeft()) {
-		  for (var i = 0; i < this.cells.length; ++i) this.cells[i].moveL();
-		  this.x--;
-		}
-		console.log("moveLeft");
-	  }
-	  this.moveRight = function() {
-	    for (var i = 0; i < this.cells.length; ++i) {
-		  if(this.cells[i].x >= 9) return false;
-		}
-		if(activeBlock.canShiftRight()) {
-		  for (var i = 0; i < this.cells.length; ++i) this.cells[i].moveR();
-		  this.x++;
-		}
-		console.log("moveRight");
-	  }
-	  this.moveDown = function() {
-		if(activeBlock.canDrop()) {
-		  activeBlock.drop();
-		}
-		console.log("moveDown");
-	  }
-	  
-	  this.rotate = function() {  
-		var newCells = [];
-		var oldCells = activeBlock.cells;
-		this.rotation++;
-		if(this.rotation === 4) this.rotation = 0;
-		for(var i = 0; i < 4; i++) {
-		  newCells.push(new Cell(ctx, blockRotations[this.type][this.rotation][i][0] + this.x, blockRotations[this.type][this.rotation][i][1] + this.y));
-		}
-		for(var i = 0; i < 4; i++) {
-		  if(newCells[i].x > 9) {
-			while(newCells[i].x > 9) for(var j = 0; j < 4; j++) newCells[j].moveL();
-		  }
-		  if(newCells[i].x < 0) {
-		    while(newCells[i].x < 0) for(var k = 0; k < 4; k++) newCells[k].moveR();
-		  }
-		  if(newCells[i].y > 17) {
-		    while(newCells[i].y > 17) for(var k = 0; k < 4; k++) newCells[k].y--;
-		  }
-		}
-		activeBlock.cells = newCells;
-		for(var j = 0; j < inactiveBlocks.length; j++) {
-		  if(activeBlock.overLap(inactiveBlocks[j])) {
-		    activeBlock.cells = oldCells;
-			if(this.rotation > 0) this.rotation--;
-			else this.rotation = 4;
-		  }
-		}
-	  }
-	}
-
-    Block.prototype.wouldCollideDown = function(otherBlock) {
-      for (var i = 0; i < 4; ++i) {
-        var cell = this.cells[i];
-        for (var j = 0; j < otherBlock.cells.length; ++j) {
-          var otherCell = otherBlock.cells[j];
-          if (otherCell.x == cell.x && otherCell.y == cell.y + 1) {
-            return true;
-          }
-        }
-      }
-      return false;
-    };
-
-	Block.prototype.overLap = function(otherBlock) {
-      for (var i = 0; i < 4; ++i) {
-        var cell = this.cells[i];
-        for (var j = 0; j < otherBlock.cells.length; ++j) {
-          var otherCell = otherBlock.cells[j];
-          if (otherCell.y == cell.y && otherCell.x == cell.x) {
-            return true;
-          }
-        }
-      }
-      return false;
-    };
 	
-    Block.prototype.wouldCollideLeft = function(otherBlock) {
-      for (var i = 0; i < 4; ++i) {
-        var cell = this.cells[i];
-        for (var j = 0; j < otherBlock.cells.length; ++j) {
-          var otherCell = otherBlock.cells[j];
-          if (otherCell.y == cell.y && otherCell.x == cell.x - 1) {
-            return true;
-          }
-        }
-      }
-      return false;
-    };
-	
-    Block.prototype.wouldCollideRight = function(otherBlock) {
-      for (var i = 0; i < 4; ++i) {
-        var cell = this.cells[i];
-        for (var j = 0; j < otherBlock.cells.length; ++j) {
-          var otherCell = otherBlock.cells[j];
-          if (otherCell.y == cell.y && otherCell.x == cell.x + 1) {
-            return true;
-          }
-        }
-      }
-      return false;
-    };
-
-    Block.prototype.canDrop = function() {
-      for(var i = 0; i < 4; i++) { // Checks for collision with grid floor
-	    if(this.cells[i].y >= 17) return false;
-	  }
-      for (var i = 0; i < inactiveBlocks.length; i++) {
-        if (activeBlock.wouldCollideDown(inactiveBlocks[i])) {
-          return false;
-        }
-      }
-      return true;
-    }
-
-	Block.prototype.fullDrop = function() {
-	  clearBlock(ctx, activeBlock, 5, -1);
-	  while(this.canDrop()) this.drop();
-	  inactiveBlocks.push(activeBlock);
-	  inactiveBlocks[inactiveBlocks.length - 1].draw();
-      activeBlock = new Block(ctx, nextBlock.type, 5, -1);
-	  nextBlock = new Block(nex, Math.floor(Math.random()*7), 1, 1);
-	}
+	// UPDATE: Create/manage new blocks/ swap blocks/ next blocks.
 	function updateGameLogic() {
-	  // UPDATE
-      if(activeBlock.canDrop()) {
-        activeBlock.drop();
-      }
+      if(activeBlock.canDrop()) { activeBlock.drop(); }
 	  else {
         inactiveBlocks.push(activeBlock);
         activeBlock = new Block(ctx, nextBlock.type, 5, -1);
 		nextBlock = new Block(nex, Math.floor(Math.random()*7), 1, 1);
-        if (activeBlock.canDrop() === false) {
-		  gameRunning = false;
-        }
+        if (activeBlock.canDrop() === false) { gameRunning = false; }
       }  
 	}
 	
 	// RENDER: Draw static/dropped blocks and active block. (RENDER)
 	function render() {
 	  clearGrid(ctx);
-      for (var i = 0; i < inactiveBlocks.length; ++i) inactiveBlocks[i].draw();
+      for (var i = 0; i < inactiveBlocks.length; ++i) { inactiveBlocks[i].draw(); }
       activeBlock.draw();
 	  nex.clearRect(0, 0, 75, 100);
 	  nextBlock.draw();
 	}
 	
-	function clearBlock(ctx, block) {
-	  for(var i = 0; i < block.cells.length; i++) ctx.clearRect(block.cells[i].x * CELL_SIZE, block.cells[i].y * CELL_SIZE, 25, 25);
-	}
+	function clearBlock(ctx, block) { for(var i = 0; i < block.cells.length; i++) ctx.clearRect(block.cells[i].x * CELL_SIZE, block.cells[i].y * CELL_SIZE, 25, 25); }
 	
 	function swapBlocks() {
 	  clearBlock(ctx, activeBlock);
@@ -399,26 +143,18 @@
 	
 	function updateCompleteRows() {
 	  var rowCells = 0;
-	  for(var k = 17; k >= 0; k--) {
+	  for(var k = 17; k >= 0; k--) { // Look for completed rows by summing the occupied cells (rowCells).
 	    for(var i = 0; i < inactiveBlocks.length; i++) {
 	      for(var j = 0; j < inactiveBlocks[i].cells.length; j++) {
 		    if(inactiveBlocks[i].cells[j].y === k) rowCells++;
 	      }
 	    }
-		if(rowCells === 10) { 
-		  // Delete row
+		if(rowCells === 10) { // Delete the row 'k'
 		  for(var z = 0; z < inactiveBlocks.length; z++) {
-			for(var p = inactiveBlocks[z].cells.length - 1; p >= 0; p--) {
-			  if(inactiveBlocks[z].cells[p].y === k) inactiveBlocks[z].cells.splice(p,1);
-			}
+			for(var p = inactiveBlocks[z].cells.length - 1; p >= 0; p--) { if(inactiveBlocks[z].cells[p].y === k) inactiveBlocks[z].cells.splice(p,1); }
 		  }
-		  // Then shift all above rows down
-		  for(var q = 0; q < inactiveBlocks.length; q++) {
-			for(var l = inactiveBlocks[q].cells.length - 1; l >= 0; l--) {
-			  if(inactiveBlocks[q].cells[l].y < k) {
-				inactiveBlocks[q].cells[l].y++;
-			  }
-			}
+		  for(var q = 0; q < inactiveBlocks.length; q++) { // Then shift all above rows down
+			for(var l = inactiveBlocks[q].cells.length - 1; l >= 0; l--) { if(inactiveBlocks[q].cells[l].y < k) { inactiveBlocks[q].cells[l].y++; } }
 		  }
 		  completedRows++;
 		  k++;
@@ -426,59 +162,8 @@
 		rowCells = 0;
 	  }
 	  // Look for empty blocks and purge them from the array.
-	  for(var m = inactiveBlocks.length - 1; m > 0; m--) {
-	    if(inactiveBlocks[m].cells.length === 0) inactiveBlocks.splice(m,1);
-	  }
+	  for(var m = inactiveBlocks.length - 1; m > 0; m--) { if(inactiveBlocks[m].cells.length === 0) inactiveBlocks.splice(m,1); }
 	}
-
-    // INPUT: Gather input and update rotations/velocity/etc.  (This is through the use of github repository 'kibo')
-	// https://github.com/marquete/kibo.git
-	var k = new Kibo();
-
-	k.down(['left'], function () {
-	  if(gameRunning && allowInput){
-	    clearBlock(ctx, activeBlock);
-	    activeBlock.moveLeft();
-	    activeBlock.draw();
-	  }
-	});
-	k.down(['right'], function () {
-	  if(gameRunning && allowInput){
-	    clearBlock(ctx, activeBlock);
-	    activeBlock.moveRight();
-	    activeBlock.draw();
-	  }
-	});
-	k.down(['down'], function () {
-	  if(gameRunning && allowInput){
-	    clearBlock(ctx, activeBlock);
-	    activeBlock.moveDown();
-	    activeBlock.draw();
-	  }
-	});
-	k.down(['up'], function () {
-	  if(gameRunning && allowInput){
-	    clearBlock(ctx, activeBlock);
-	    activeBlock.rotate();
-	    activeBlock.draw();
-	 }
-	});
-	k.down(['p'], function () {
-	  if(gameRunning && allowInput){
-	    gameRunning = false;
-	 }
-	});
-	k.down(['space'], function () {
-	  if(gameRunning && allowInput){
-	    activeBlock.fullDrop();
-		allowInput = false;
-	 }
-	});
-	k.down(['enter'], function () {
-	  if(gameRunning && allowInput){
-	    swapBlocks();
-	 }
-	});
 	
 	// The Game Loop
     activeBlock.draw();	
@@ -487,7 +172,6 @@
 	  allowInput = true;
 	  updateGameLogic();
 	  updateCompleteRows();
-	  
 	  render();
 	  count += 1;
 	  document.getElementById('count').innerHTML=count;
@@ -501,6 +185,4 @@
 	tetrisLoop();
 	
   </script>
-
-</body>
 </html>
