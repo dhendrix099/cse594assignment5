@@ -3,6 +3,49 @@
 
 
 // PC INPUTS
+if( /Android|webOS|iPhone|iPad|iPod|BlackBerry/i.test(navigator.userAgent) ) {
+console.log('Mobile device recognized');
+// MOBILE INPUTS
+$.mobile.defaultPageTransition   = 'none';
+$.mobile.defaultDialogTransition = 'none';
+$.mobile.buttonMarkup.hoverDelay = 0;
+
+$(document).ready(function() {
+  $(document).live('swiperight', function(event, data) {
+    event.stopImmediatePropagation(); // to prevent "Double Event Firing" of a swipe event's function
+    if(gameRunning && allowInput){
+	  clearBlock(ctx, activeBlock);
+	  activeBlock.moveRight();
+	  activeBlock.draw();
+    }
+  });
+  $(document).live('swipeleft', function(event, data) {
+    event.stopImmediatePropagation(); // to prevent "Double Event Firing" of a swipe event's function
+    if(gameRunning && allowInput){
+	  clearBlock(ctx, activeBlock);
+      activeBlock.moveLeft();
+	  activeBlock.draw();
+    }
+  });
+  $(document).live('tap', function(event, data) {
+    event.stopImmediatePropagation(); // to prevent "Double Event Firing" of a swipe event's function
+    if(gameRunning && allowInput){
+	  clearBlock(ctx, activeBlock);
+	  activeBlock.rotate();
+	  activeBlock.draw();
+    }
+  });
+  $(document).live('taphold', function(event, data) {
+    event.stopImmediatePropagation(); // to prevent "Double Event Firing" of a swipe event's function
+    if(gameRunning && allowInput){
+	  activeBlock.fullDrop();
+	  allowInput = false;
+    }
+  });
+});
+}
+else{
+console.log('Non-mobile device');
 var k = new Kibo();
 k.down(['left'], function () {
   if(gameRunning && allowInput){
@@ -30,7 +73,7 @@ k.down(['up'], function () {
 	clearBlock(ctx, activeBlock);
 	activeBlock.rotate();
 	activeBlock.draw();
- }
+  }
 });
 k.down(['p'], function () {
   if(gameRunning && allowInput){
@@ -48,21 +91,4 @@ k.down(['enter'], function () {
 	swapBlocks();
  }
 });
-
-// MOBILE INPUTS
-$(document).on('swiperight', function(event, data) {
-  event.stopImmediatePropagation(); // to prevent "Double Event Firing" of a swipe event's function
-  if(gameRunning && allowInput){
-	clearBlock(ctx, activeBlock);
-	activeBlock.moveRight();
-	activeBlock.draw();
-  }
-});
-$(document).on('swipeleft', function(event, data) {
-  event.stopImmediatePropagation(); // to prevent "Double Event Firing" of a swipe event's function
-  if(gameRunning && allowInput){
-	clearBlock(ctx, activeBlock);
-	activeBlock.moveLeft();
-	activeBlock.draw();
-  }
-});
+}
