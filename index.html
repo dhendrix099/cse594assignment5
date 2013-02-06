@@ -15,34 +15,30 @@
       overflow:hidden;
     }
   </style>
+  <script type="text/javascript" src ="jquery-1.8.2.js"></script>
+  <script type="text/javascript" src ="jquery.mobile-1.2.0.js"></script>
+  <script type="text/javascript" src ="kibo.js"></script>
+  <script type="text/javascript" src ="Input.js"></script>
+  <script type="text/javascript" src ="Block.js"></script>
 </head>
-
 <body>
   <center>
-    <table>
+    <table id="myGameTable">
 	<tr>
 	Assignment 5 <br>
 	</tr>
 	<tr valign=TOP>
-	  <td>
-	    <center><div>Swap</div></center>
-	    <canvas id="swapblock" width="75" height="100"></canvas>
-	  </td>
       <td>
 	    <canvas id="canvas" width="250" height="450"></canvas>
 	  </td>
 	  <td>
-	    <center><div>Next Block</div></center>
+	    <div>Next Block</div>
 		<canvas id="nextblock" width="75" height="100"></canvas>
-	    <div>Ticks: </div><div id="count"> </div> <br>
+		<div>Swap</div>
+	    <canvas id="swapblock" width="75" height="100"></canvas>
+	    <div>Ticks: </div><div id="count"> </div>
 	    <div>Score: </div><div id="completerows"> </div>
-	  </td>
-	</tr>
-	<tr valign=TOP>
-	  <td>
-	  </td>
-	  <td>
-	   <center> <b>Controls</b> <br>
+		<center> <b>Controls</b> <br>
 	  LEFT ARROW KEY(left) <br>
 	  RIGHT ARROW KEY(right) <br>
 	  DOWN ARROW KEY(drop faster) <br>
@@ -51,17 +47,20 @@
 	  ENTER(swap blocks) <br>
 	  P(quit) <br> </center>
 	  </td>
-	  <td>
-	  </td>
 	</tr>
 	</table>
   </center>
 </body>
-  <script type="text/javascript" src ="kibo.js"></script>
-  <script type="text/javascript" src ="Input.js"></script>
-  <script type="text/javascript" src ="Block.js"></script>
   <script type="text/javascript"> 
-    var CELL_SIZE = 25;
+  
+
+    var width = (window.innerWidth > 0) ? window.innerWidth : screen.width;
+	var height = (window.innerHeight > 0) ? window.innerHeight : screen.height;
+    //var CELL_SIZE = 25;
+	var CELL_SIZE = 0;
+	if((height/19) < (width/14)) { CELL_SIZE = Math.floor(height/19); }
+	else { CELL_SIZE = Math.floor(width/14); }
+	//var CELL_SIZE = width/14;
     var INTERVAL = 550; // milliseconds
 	var count = 0;  // For testing purposes -- make sure the interval stops on game over/completion -- *****clean me
 	var gameRunning = true;
@@ -73,6 +72,12 @@
 	canvas.style.border = "black 1px solid";
     nextBlockCanvas.style.border = "black 1px solid";
 	swapBlockCanvas.style.border = "black 1px solid";
+	canvas.width = CELL_SIZE*10;
+	canvas.height = CELL_SIZE*18;
+	nextBlockCanvas.width = CELL_SIZE*3;
+	nextBlockCanvas.height = CELL_SIZE*4;
+	swapBlockCanvas.width = CELL_SIZE*3;
+	swapBlockCanvas.height = CELL_SIZE*4;
 	var ctx = canvas.getContext('2d');
 	var nex = nextBlockCanvas.getContext('2d');  // 3 CELL_SIZE x 4 CELL_SIZE
 	var swa = swapBlockCanvas.getContext('2d');  // 3 CELL_SIZE x 4 CELL_SIZE
@@ -94,7 +99,7 @@
     function Cell(ctx, type, x, y) {
       this.x = x;
       this.y = y;
-	  this.draw = function() { ctx.drawImage(imgArray[type], this.x * CELL_SIZE, this.y * CELL_SIZE); }
+	  this.draw = function() { ctx.drawImage(imgArray[type], this.x * CELL_SIZE, this.y * CELL_SIZE, CELL_SIZE, CELL_SIZE); }
       this.drop = function() { ++this.y; }
 	  this.moveL = function() { --this.x; }
 	  this.moveR = function() { ++this.x; }
@@ -116,11 +121,11 @@
 	  clearGrid(ctx);
       for (var i = 0; i < inactiveBlocks.length; ++i) { inactiveBlocks[i].draw(); }
       activeBlock.draw();
-	  nex.clearRect(0, 0, 75, 100);
+	  nex.clearRect(0, 0, nextBlockCanvas.width, nextBlockCanvas.height);
 	  nextBlock.draw();
 	}
 	
-	function clearBlock(ctx, block) { for(var i = 0; i < block.cells.length; i++) ctx.clearRect(block.cells[i].x * CELL_SIZE, block.cells[i].y * CELL_SIZE, 25, 25); }
+	function clearBlock(ctx, block) { for(var i = 0; i < block.cells.length; i++) ctx.clearRect(block.cells[i].x * CELL_SIZE, block.cells[i].y * CELL_SIZE, CELL_SIZE, CELL_SIZE); }
 	
 	function swapBlocks() {
 	  clearBlock(ctx, activeBlock);
@@ -128,7 +133,7 @@
 	    swapBlock = new Block(swa, activeBlock.type, 1, 1);
 		activeBlock = new Block(ctx, nextBlock.type, activeBlock.x, activeBlock.y);
 	    nextBlock = new Block(nex, Math.floor(Math.random()*7), 1, 1);
-		nex.clearRect(0, 0, 75, 100);
+		nex.clearRect(0, 0, nextBlockCanvas.width, nextBlockCanvas.height);
 	    nextBlock.draw();
 	  }
 	  else {
@@ -137,7 +142,7 @@
 		swapBlock = new Block(swa, tempBlock.type, 1, 1);
 	  }
 	  activeBlock.draw();
-	  swa.clearRect(0, 0, 75, 100);
+	  swa.clearRect(0, 0, swapBlockCanvas.width, swapBlockCanvas.height);
 	  swapBlock.draw();
 	}
 	
@@ -182,7 +187,7 @@
 	  }
 	  if(gameRunning) setTimeout("tetrisLoop()", INTERVAL);
 	}
-	tetrisLoop();
+	window.onload = tetrisLoop;
 	
   </script>
 </html>

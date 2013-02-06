@@ -1,7 +1,9 @@
 // INPUT: Gather input and update rotations/velocity/etc.  (This is through the use of github repository 'kibo')
 // https://github.com/marquete/kibo.git
-var k = new Kibo();
 
+
+// PC INPUTS
+var k = new Kibo();
 k.down(['left'], function () {
   if(gameRunning && allowInput){
 	clearBlock(ctx, activeBlock);
@@ -45,4 +47,22 @@ k.down(['enter'], function () {
   if(gameRunning && allowInput){
 	swapBlocks();
  }
+});
+
+// MOBILE INPUTS
+$(document).on('swiperight', function(event, data) {
+  event.stopImmediatePropagation(); // to prevent "Double Event Firing" of a swipe event's function
+  if(gameRunning && allowInput){
+	clearBlock(ctx, activeBlock);
+	activeBlock.moveRight();
+	activeBlock.draw();
+  }
+});
+$(document).on('swipeleft', function(event, data) {
+  event.stopImmediatePropagation(); // to prevent "Double Event Firing" of a swipe event's function
+  if(gameRunning && allowInput){
+	clearBlock(ctx, activeBlock);
+	activeBlock.moveLeft();
+	activeBlock.draw();
+  }
 });
