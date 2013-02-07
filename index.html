@@ -14,12 +14,14 @@
       height:100%; 
       overflow:hidden;
     }
-    .nonSelectable {
-	  user-select: none;
+    * {
+      cursor: default;
+	    user-select: none;
       -moz-user-select: none;  
       -webkit-user-select: none;  
       -ms-user-select: none;
-	}
+	    -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+    }
   </style>
   <script type="text/javascript" src ="jquery-1.8.2.js"></script>
   <script type="text/javascript" src ="jquery.mobile-1.2.0.js"></script>
@@ -57,9 +59,7 @@
 	</table>
   </center>
 </body>
-  <script type="text/javascript"> 
-  
-
+  <script type="text/javascript">
     var width = (window.innerWidth > 0) ? window.innerWidth : screen.width;
 	var height = (window.innerHeight > 0) ? window.innerHeight : screen.height;
     //var CELL_SIZE = 25;
@@ -92,7 +92,7 @@
 	  imgArray[i] = new Image();
 	  imgArray[i].src = 'img/' + i + '.png';
 	}
-    var inactiveBlocks = [];
+  var inactiveBlocks = [];
 	var activeBlock = new Block(ctx, Math.floor(Math.random()*7), 5, -1);
 	var nextBlock = new Block(nex, Math.floor(Math.random()*7), 1, 1);
 	var swapBlock = new Block(swa, 0, 1, 1);
@@ -175,7 +175,6 @@
 	  // Look for empty blocks and purge them from the array.
 	  for(var m = inactiveBlocks.length - 1; m > 0; m--) { if(inactiveBlocks[m].cells.length === 0) inactiveBlocks.splice(m,1); }
 	}
-	
 	// The Game Loop
     activeBlock.draw();	
 	nextBlock.draw()
@@ -194,6 +193,5 @@
 	  if(gameRunning) setTimeout("tetrisLoop()", INTERVAL);
 	}
 	window.onload = tetrisLoop;
-	
   </script>
 </html>
