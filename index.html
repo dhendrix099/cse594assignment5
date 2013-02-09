@@ -60,7 +60,7 @@
   </center>
 </body>
   <script type="text/javascript">
-    var width = (window.innerWidth > 0) ? window.innerWidth : screen.width;
+  var width = (window.innerWidth > 0) ? window.innerWidth : screen.width;
 	var height = (window.innerHeight > 0) ? window.innerHeight : screen.height;
     //var CELL_SIZE = 25;
 	var CELL_SIZE = 0;
@@ -192,6 +192,7 @@
 	  }
 	  if(gameRunning) setTimeout("tetrisLoop()", INTERVAL);
 	}
-	window.onload = tetrisLoop;
+  //tetrisLoop();
+	//window.onload = tetrisLoop;
   </script>
 </html>
